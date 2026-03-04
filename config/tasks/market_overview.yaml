@@ -1,0 +1,62 @@
+name: market_overview_daily
+description: "Taeglicher Marktueberblick Mo-Fr 22:00 CET mit News-Kontext und Makro-Analyse"
+analysis_type: market_overview
+
+schedule:
+  cron: "0 22 * * 1-5"
+  timezone: "Europe/Berlin"
+  enabled: true
+
+parameters:
+  indices:
+    - { ticker: "^GSPC", name: "S&P 500" }
+    - { ticker: "^DJI", name: "Dow Jones" }
+    - { ticker: "^IXIC", name: "Nasdaq" }
+    - { ticker: "^GDAXI", name: "DAX" }
+    - { ticker: "^FTSE", name: "FTSE 100" }
+    - { ticker: "^FCHI", name: "CAC 40" }
+    - { ticker: "^STOXX50E", name: "Euro Stoxx 50" }
+    - { ticker: "^N225", name: "Nikkei 225" }
+    - { ticker: "^HSI", name: "Hang Seng" }
+    - { ticker: "000001.SS", name: "Shanghai Composite" }
+
+  sectors: true
+
+  commodities:
+    - { ticker: "GC=F", name: "Gold" }
+    - { ticker: "SI=F", name: "Silber" }
+    - { ticker: "CL=F", name: "Crude Oil WTI" }
+    - { ticker: "BZ=F", name: "Brent Crude" }
+
+  forex:
+    - { ticker: "EURUSD=X", name: "EUR/USD" }
+    - { ticker: "USDJPY=X", name: "USD/JPY" }
+    - { ticker: "GBPUSD=X", name: "GBP/USD" }
+    - { ticker: "DX-Y.NYB", name: "US Dollar Index" }
+
+  macro_indicators:
+    - { series_id: "^VIX", name: "VIX", source: "yfinance" }
+    - { series_id: "^TNX", name: "10Y Treasury Yield", source: "yfinance" }
+
+  news:
+    enabled: true
+    max_items: 25
+    max_age_hours: 18
+
+llm:
+  model: "gpt-4.1"
+  prompt_version: "v2"
+  prompt_template: "market_overview"
+  max_tokens: 8192
+  temperature: 0.3
+
+output_channels:
+  - type: telegram
+    config:
+      bot_token_env: "TELEGRAM_BOT_TOKEN_BRIEFING"
+      chat_id_env: "TELEGRAM_CHAT_ID"
+      parse_mode: "HTML"
+
+cache:
+  data_ttl_minutes: 30
+  analysis_ttl_minutes: 720

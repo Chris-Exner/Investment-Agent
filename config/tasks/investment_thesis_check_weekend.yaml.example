@@ -1,0 +1,41 @@
+name: investment_thesis_check_weekend
+description: "Montag-Morgen Thesis-Check mit Wochenend-News und Wochenvorschau"
+analysis_type: thesis_check
+
+schedule:
+  cron: "0 6 * * 1"
+  timezone: "Europe/Berlin"
+  enabled: true
+
+parameters:
+  positions:
+    # Gleiche Positionen wie in investment_thesis_check.yaml
+    - ticker: "AAPL"
+      name: "Apple"
+      thesis: "Deine These..."
+      bear_triggers:
+        - "Trigger 1"
+        - "Trigger 2"
+
+  news:
+    enabled: true
+    max_items: 30
+    max_age_hours: 60
+
+llm:
+  model: "gpt-4.1"
+  prompt_version: "v2"
+  prompt_template: "thesis_check_weekend"
+  max_tokens: 6144
+  temperature: 0.3
+
+output_channels:
+  - type: telegram
+    config:
+      bot_token_env: "TELEGRAM_BOT_TOKEN_THESIS"
+      chat_id_env: "TELEGRAM_CHAT_ID"
+      parse_mode: "HTML"
+
+cache:
+  data_ttl_minutes: 30
+  analysis_ttl_minutes: 1440

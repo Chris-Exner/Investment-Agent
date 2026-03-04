@@ -1,0 +1,36 @@
+# Claude Code
+.claude/
+
+# Environment
+.env
+.venv/
+node_modules/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Personal investment configs (contain private thesis data)
+config/tasks/investment_thesis_check.yaml
+config/tasks/investment_thesis_check_weekend.yaml
+
+# Data (local storage)
+data/cache.db
+data/results/
+data/logs/
+
+# Dashboard
+dashboard/node_modules/
+dashboard/dist/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

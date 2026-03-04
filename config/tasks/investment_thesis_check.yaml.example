@@ -1,0 +1,54 @@
+name: investment_thesis_check
+description: "Taeglicher Investment-Thesis-Check Mo-Fr 22:00 CET"
+analysis_type: thesis_check
+
+schedule:
+  cron: "0 22 * * 1-5"
+  timezone: "Europe/Berlin"
+  enabled: true
+
+parameters:
+  positions:
+    - ticker: "AAPL"
+      name: "Apple"
+      thesis: >
+        Beschreibe hier deine Bull-These: Warum du investiert bist,
+        welche Wachstumstreiber du siehst, wichtige Kennzahlen.
+      bear_triggers:
+        - "iPhone-Umsatzwachstum unter 5%"
+        - "Services-Marge faellt unter 70%"
+        - "Regulatorischer Druck auf App Store"
+
+    - ticker: "MSFT"
+      name: "Microsoft"
+      thesis: >
+        Deine These zu Microsoft: Cloud-Wachstum, AI-Copilot,
+        Enterprise-Dominanz, etc.
+      bear_triggers:
+        - "Azure-Wachstum unter 20%"
+        - "AI-Monetarisierung enttaeuscht"
+
+    # Fuege weitere Positionen hinzu...
+
+  news:
+    enabled: true
+    max_items: 20
+    max_age_hours: 24
+
+llm:
+  model: "gpt-4.1"
+  prompt_version: "v2"
+  prompt_template: "thesis_check"
+  max_tokens: 6144
+  temperature: 0.3
+
+output_channels:
+  - type: telegram
+    config:
+      bot_token_env: "TELEGRAM_BOT_TOKEN_THESIS"
+      chat_id_env: "TELEGRAM_CHAT_ID"
+      parse_mode: "HTML"
+
+cache:
+  data_ttl_minutes: 30
+  analysis_ttl_minutes: 720
