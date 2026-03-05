@@ -10,6 +10,22 @@ AI-powered market analysis and investment monitoring with automated Telegram del
 - **React Dashboard** — Manage positions, trigger analyses manually, browse results
 - **Telegram Delivery** — Formatted analyses straight to your phone
 
+- ## Analyses
+
+### Market Overview
+
+Daily analysis (Mon-Fri 22:00) and Monday morning briefing (06:00) with weekly outlook.
+Covers S&P 500, DAX, Nikkei, Gold, Oil, EUR/USD, VIX, Treasury yields, sector performance
+and current financial news. GPT produces a structured market assessment with sentiment
+ratings and risk indicators.
+
+### Investment Thesis Check
+
+Daily review (Mon-Fri 22:00) and Monday morning review (06:00) of your positions.
+For each stock, price, fundamentals and news are checked against the defined thesis and
+bear triggers. The system remembers previous checks — warnings cannot silently disappear
+but must be explicitly resolved.
+
 ## Tech Stack
 
 | Area | Technologies |
@@ -129,19 +145,3 @@ output_channels:
       bot_token_env: "TELEGRAM_BOT_TOKEN_THESIS"
       chat_id_env: "TELEGRAM_CHAT_ID"
 ```
-
-## Analyses
-
-### Market Overview
-
-Daily analysis (Mon-Fri 22:00) and Monday morning briefing (06:00) with weekly outlook.
-Covers S&P 500, DAX, Nikkei, Gold, Oil, EUR/USD, VIX, Treasury yields, sector performance
-and current financial news. GPT produces a structured market assessment with sentiment
-ratings and risk indicators.
-
-### Investment Thesis Check
-
-Daily review (Mon-Fri 22:00) and Monday morning review (06:00) of your positions.
-For each stock, price, fundamentals and news are checked against the defined thesis and
-bear triggers. The system remembers previous checks — warnings cannot silently disappear
-but must be explicitly resolved.
