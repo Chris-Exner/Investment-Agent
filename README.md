@@ -10,7 +10,7 @@ AI-powered market analysis and investment monitoring with automated Telegram del
 - **React Dashboard** — Manage positions, trigger analyses manually, browse results
 - **Telegram Delivery** — Formatted analyses straight to your phone
 
-- ## Analyses
+## Analyses
 
 ### Market Overview
 
