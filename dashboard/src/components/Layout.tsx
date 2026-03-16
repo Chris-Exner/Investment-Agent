@@ -12,6 +12,9 @@ export default function Layout() {
           <NavLink to="/runs" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
             Letzte Läufe
           </NavLink>
+          <NavLink to="/research" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+            Recherche
+          </NavLink>
         </nav>
       </header>
       <main className="main">

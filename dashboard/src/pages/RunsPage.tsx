@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { api } from '../api/client'
 import type { RunSummary, TaskInfo } from '../types'
 import RunRow from '../components/RunRow'
@@ -9,6 +9,15 @@ export default function RunsPage() {
   const [tasks, setTasks] = useState<TaskInfo[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const loadRuns = useCallback(async () => {
+    try {
+      const data = await api.getRuns(30)
+      setRuns(data)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Fehler beim Laden')
+    }
+  }, [])
 
   useEffect(() => {
     async function load() {
@@ -48,6 +57,7 @@ export default function RunsPage() {
               key={task.name}
               taskName={task.name}
               label={`${task.description || task.name}`}
+              onRunComplete={loadRuns}
             />
           ))}
         </div>

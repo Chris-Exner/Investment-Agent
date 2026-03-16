@@ -50,3 +50,56 @@ export interface RunDetail extends RunSummary {
   analysis_text: string | null
   structured_data: Record<string, unknown> | null
 }
+
+// --- Research ---
+
+export interface ConversationSummary {
+  id: number
+  title: string
+  created_at: string
+  updated_at: string
+  message_count: number
+  status: string
+}
+
+export interface ChatMessage {
+  id: number
+  role: 'user' | 'assistant' | 'tool'
+  content: string
+  tool_calls: ToolCallInfo[] | null
+  data_cards: DataCard[]
+  created_at: string
+}
+
+export interface ToolCallInfo {
+  id: string
+  function_name: string
+  arguments: Record<string, unknown>
+}
+
+export interface DataCard {
+  type: string
+  function_name: string
+  arguments: Record<string, unknown>
+  data: Record<string, unknown> | Record<string, unknown>[]
+}
+
+export interface ConversationDetail extends ConversationSummary {
+  messages: ChatMessage[]
+}
+
+export interface SendMessageResponse {
+  user_message: ChatMessage
+  assistant_message: ChatMessage
+  position_proposal: PositionProposal | null
+  tokens_input: number
+  tokens_output: number
+}
+
+export interface PositionProposal {
+  ticker: string
+  name: string
+  thesis: string
+  bear_triggers: string[]
+  reasoning: string
+}
