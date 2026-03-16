@@ -79,3 +79,65 @@ class RunDetail(RunSummary):
 
     analysis_text: str | None = None
     structured_data: dict | None = None
+
+
+# --- Research ---
+
+
+class ConversationCreate(BaseModel):
+    """Request to create a new research conversation."""
+
+    title: str = "Neue Recherche"
+
+
+class ConversationOut(BaseModel):
+    """Conversation summary for list views."""
+
+    id: int
+    title: str
+    created_at: str
+    updated_at: str
+    message_count: int
+    status: str
+
+
+class MessageOut(BaseModel):
+    """A single conversation message."""
+
+    id: int
+    role: str
+    content: str
+    tool_calls: list[dict] | None = None
+    data_cards: list[dict] = Field(default_factory=list)
+    created_at: str
+
+
+class ConversationDetailOut(ConversationOut):
+    """Full conversation with messages."""
+
+    messages: list[MessageOut] = Field(default_factory=list)
+
+
+class SendMessageIn(BaseModel):
+    """User message to send to the research agent."""
+
+    content: str = Field(min_length=1)
+
+
+class SendMessageOut(BaseModel):
+    """Response after the agent processed a message."""
+
+    user_message: MessageOut
+    assistant_message: MessageOut
+    position_proposal: dict | None = None
+    tokens_input: int = 0
+    tokens_output: int = 0
+
+
+class ConfirmPositionIn(BaseModel):
+    """Confirm and create a position proposed by the agent."""
+
+    ticker: str = Field(min_length=1, max_length=10)
+    name: str = Field(min_length=1)
+    thesis: str = Field(min_length=1)
+    bear_triggers: list[str] = Field(default_factory=list)

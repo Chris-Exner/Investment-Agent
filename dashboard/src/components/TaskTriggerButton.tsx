@@ -5,9 +5,10 @@ import type { RunStatus } from '../types'
 interface Props {
   taskName: string
   label: string
+  onRunComplete?: () => void
 }
 
-export default function TaskTriggerButton({ taskName, label }: Props) {
+export default function TaskTriggerButton({ taskName, label, onRunComplete }: Props) {
   const [status, setStatus] = useState<'idle' | 'running' | 'success' | 'failed'>('idle')
   const [result, setResult] = useState<RunStatus | null>(null)
   const intervalRef = useRef<number | null>(null)
@@ -35,6 +36,7 @@ export default function TaskTriggerButton({ taskName, label }: Props) {
             clearPolling()
             setStatus(s.status as 'success' | 'failed')
             setResult(s)
+            onRunComplete?.()
           }
         } catch {
           clearPolling()

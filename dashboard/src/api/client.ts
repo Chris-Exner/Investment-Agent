@@ -1,4 +1,7 @@
-import type { Position, PositionInput, TaskInfo, RunStatus, RunSummary, RunDetail } from '../types'
+import type {
+  Position, PositionInput, TaskInfo, RunStatus, RunSummary, RunDetail,
+  ConversationSummary, ConversationDetail, SendMessageResponse
+} from '../types'
 
 const BASE = '/api'
 
@@ -56,4 +59,32 @@ export const api = {
 
   getRunDetail: (runId: number) =>
     request<RunDetail>(`/runs/${runId}`),
+
+  // Research
+  getConversations: () =>
+    request<ConversationSummary[]>('/research/conversations'),
+
+  createConversation: (title = 'Neue Recherche') =>
+    request<ConversationSummary>('/research/conversations', {
+      method: 'POST',
+      body: JSON.stringify({ title }),
+    }),
+
+  getConversation: (id: number) =>
+    request<ConversationDetail>(`/research/conversations/${id}`),
+
+  deleteConversation: (id: number) =>
+    request<void>(`/research/conversations/${id}`, { method: 'DELETE' }),
+
+  sendMessage: (conversationId: number, content: string) =>
+    request<SendMessageResponse>(
+      `/research/conversations/${conversationId}/messages`,
+      { method: 'POST', body: JSON.stringify({ content }) }
+    ),
+
+  confirmPosition: (conversationId: number, data: PositionInput) =>
+    request<Position>(
+      `/research/conversations/${conversationId}/confirm-position`,
+      { method: 'POST', body: JSON.stringify(data) }
+    ),
 }

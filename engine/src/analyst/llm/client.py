@@ -180,6 +180,77 @@ class LLMClient:
 
         return _resolve(schema)
 
+    async def chat_with_tools(
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]] | None = None,
+        max_tokens: int = 4096,
+        temperature: float = 0.4,
+    ) -> dict[str, Any]:
+        """Multi-turn chat with optional tool use.
+
+        Unlike analyze() which takes a single system+user pair, this method
+        accepts a full OpenAI message history and lets the LLM choose
+        whether and which tools to call.
+
+        Args:
+            messages: Full OpenAI message history (system, user, assistant, tool).
+            tools: OpenAI tool definitions (function calling format).
+            max_tokens: Max response tokens.
+            temperature: Response temperature.
+
+        Returns:
+            dict with keys: content, tool_calls, input_tokens, output_tokens, model
+        """
+        kwargs: dict[str, Any] = {
+            "model": self.model,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+            "messages": messages,
+        }
+        if tools:
+            kwargs["tools"] = tools
+
+        try:
+            response = await asyncio.to_thread(
+                self.client.chat.completions.create, **kwargs
+            )
+
+            message = response.choices[0].message
+            input_tokens = response.usage.prompt_tokens if response.usage else 0
+            output_tokens = response.usage.completion_tokens if response.usage else 0
+
+            self._total_input_tokens += input_tokens
+            self._total_output_tokens += output_tokens
+
+            tool_calls = None
+            if message.tool_calls:
+                tool_calls = [
+                    {
+                        "id": tc.id,
+                        "function_name": tc.function.name,
+                        "arguments": json.loads(tc.function.arguments),
+                    }
+                    for tc in message.tool_calls
+                ]
+
+            logger.info(
+                f"GPT chat call: {input_tokens} in / {output_tokens} out tokens "
+                f"(model: {self.model}, tools: {len(tool_calls) if tool_calls else 0})"
+            )
+
+            return {
+                "content": message.content,
+                "tool_calls": tool_calls,
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "model": self.model,
+            }
+
+        except OpenAIAPIError as e:
+            logger.error(f"OpenAI API error: {e}")
+            raise LLMError(f"OpenAI API error: {e}") from e
+
     @property
     def total_tokens(self) -> dict[str, int]:
         """Return total token usage across all calls."""
