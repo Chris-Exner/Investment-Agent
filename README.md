@@ -19,13 +19,13 @@ The integrated research chatbot (React frontend + Claude-based agent) enables in
 
 Through multi-turn conversation you can test hypotheses, compare stocks, and develop a well-founded investment thesis with concrete bear-case triggers.
 
-![Research Chat — interactive stock analysis with the AI agent](https://www.loom.com/i/978d336e53104f47bad13519447bb37f)
+[Screenshot: Research Chat](https://www.loom.com/i/978d336e53104f47bad13519447bb37f)
 
 ### 2. Turn a Thesis into a Position — One Click from Chat to Dashboard
 
 Once the research agent has gathered enough data, it proposes a structured investment position via the `propose_position` tool (ticker, thesis, bear triggers). The proposal appears as a card in the chat — clicking "Create Position" promotes the thesis to an active position in the dashboard and enrolls it in daily monitoring.
 
-![Positions — manage investment theses and bear triggers](https://www.loom.com/i/f625ab0d31d948148081a95a7332a7c7)
+[Screenshot: Positions](https://www.loom.com/i/f625ab0d31d948148081a95a7332a7c7)
 
 ### 3. Daily Thesis Monitoring — Telegram Alerts for Broken Theses
 
@@ -35,7 +35,7 @@ Every evening (Mon-Fri 22:00, plus Monday 06:00) the system automatically checks
 
 In parallel, the market overview task delivers a daily briefing on the overall market: S&P 500, DAX, Nikkei, Gold, Oil, EUR/USD, VIX, Treasury yields, sector performance, and current financial news. GPT produces a structured market assessment with sentiment ratings and risk indicators — also delivered automatically via Telegram.
 
-![Runs — trigger analyses manually or view scheduled run history](https://www.loom.com/i/69a5c50ed44340cf9b4ac8d713da214d)
+[Screenshot: Runs](https://www.loom.com/i/69a5c50ed44340cf9b4ac8d713da214d)
 
 ## Tech Stack
 
