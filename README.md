@@ -1,30 +1,33 @@
 # Financial Analyst Engine
 
-AI-powered market analysis and investment monitoring with automated Telegram delivery.
+AI-powered investment research, portfolio monitoring and market analysis with automated Telegram delivery.
 
-## Features
+## How It Works
 
-- **Daily Market Overview** — Indices, sectors, commodities, forex, macro indicators and news context via GPT-4.1
-- **Investment Thesis Check** — Monitors positions against defined bear triggers with continuity between runs
-- **Cron Scheduler** — APScheduler with catch-up for missed executions
-- **React Dashboard** — Manage positions, trigger analyses manually, browse results
-- **Telegram Delivery** — Formatted analyses straight to your phone
+The system covers the full lifecycle of an investment — from initial research to ongoing monitoring:
 
-## Analyses
+### 1. Research — Identify Investment Opportunities via Chatbot
 
-### Market Overview
+The integrated research chatbot (React frontend + Claude-based agent) enables interactive stock analysis directly in the dashboard. The agent pulls from multiple external data sources:
 
-Daily analysis (Mon-Fri 22:00) and Monday morning briefing (06:00) with weekly outlook.
-Covers S&P 500, DAX, Nikkei, Gold, Oil, EUR/USD, VIX, Treasury yields, sector performance
-and current financial news. GPT produces a structured market assessment with sentiment
-ratings and risk indicators.
+- **Real-time quotes** via yfinance (stocks, indices, sectors)
+- **Fundamentals** (revenue, earnings, margins, valuation metrics)
+- **Macro indicators** (VIX, Treasury yields, US Dollar Index) via yfinance and FRED API
+- **Financial news** via RSS feeds and news scraping
 
-### Investment Thesis Check
+Through multi-turn conversation you can test hypotheses, compare stocks, and develop a well-founded investment thesis with concrete bear-case triggers.
 
-Daily review (Mon-Fri 22:00) and Monday morning review (06:00) of your positions.
-For each stock, price, fundamentals and news are checked against the defined thesis and
-bear triggers. The system remembers previous checks — warnings cannot silently disappear
-but must be explicitly resolved.
+### 2. Turn a Thesis into a Position — One Click from Chat to Dashboard
+
+Once the research agent has gathered enough data, it proposes a structured investment position via the `propose_position` tool (ticker, thesis, bear triggers). The proposal appears as a card in the chat — clicking "Create Position" promotes the thesis to an active position in the dashboard and enrolls it in daily monitoring.
+
+### 3. Daily Thesis Monitoring — Telegram Alerts for Broken Theses
+
+Every evening (Mon-Fri 22:00, plus Monday 06:00) the system automatically checks each active position against its defined bear triggers. Current prices, fundamentals, and news are evaluated. If issues are detected you receive a structured Telegram message with risk assessment and recommended action. The system remembers previous checks — once flagged, warnings cannot silently disappear.
+
+### 4. Daily Market Newsletter — Big Picture via Telegram
+
+In parallel, the market overview task delivers a daily briefing on the overall market: S&P 500, DAX, Nikkei, Gold, Oil, EUR/USD, VIX, Treasury yields, sector performance, and current financial news. GPT produces a structured market assessment with sentiment ratings and risk indicators — also delivered automatically via Telegram.
 
 ## Tech Stack
 
@@ -32,9 +35,9 @@ but must be explicitly resolved.
 |------|-------------|
 | Backend | Python 3.11+, FastAPI, APScheduler, Pydantic |
 | AI | OpenAI GPT-4.1 (Structured Output) |
-| Data | yfinance, RSS/News Scraping, FRED API |
+| Data Sources | yfinance (quotes, fundamentals, macro), RSS/News Scraping, FRED API (macro indicators) |
 | Frontend | React 19, TypeScript, Vite |
-| Storage | SQLite (runs & cache), YAML (configuration) |
+| Storage | SQLite (runs & cache), YAML (task configuration & positions) |
 | Output | Telegram Bot API |
 
 ## Project Structure
@@ -75,20 +78,28 @@ financial-analyst/
 ### Installation
 
 ```bash
-# Create .env in project root
+# 1. Configure environment variables
 cp .env.example .env
 # Fill in the following keys:
 #   OPENAI_API_KEY, TELEGRAM_BOT_TOKEN_BRIEFING,
 #   TELEGRAM_BOT_TOKEN_THESIS, TELEGRAM_CHAT_ID
 
-# Backend
+# 2. Create task configurations from example templates
+cp config/tasks/investment_thesis_check.yaml.example config/tasks/investment_thesis_check.yaml
+cp config/tasks/investment_thesis_check_weekend.yaml.example config/tasks/investment_thesis_check_weekend.yaml
+# Positions can be managed later via the dashboard or research chat.
+# The example positions in the YAML files can be removed or adjusted.
+
+# 3. Install backend
 cd engine
 pip install -e .
 
-# Frontend
+# 4. Install frontend
 cd ../dashboard
 npm install
 ```
+
+> **Important:** Without the duplicated YAML files (step 2), no investment positions can be saved — neither via the dashboard nor the research chat.
 
 ## Usage
 
