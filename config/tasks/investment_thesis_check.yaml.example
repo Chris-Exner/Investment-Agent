@@ -36,11 +36,11 @@ parameters:
     max_age_hours: 24
 
 llm:
-  model: "gpt-4.1"
+  model: "gpt-5.5"
   prompt_version: "v2"
   prompt_template: "thesis_check"
-  max_tokens: 6144
-  temperature: 0.3
+  max_output_tokens: 6144
+  reasoning_effort: "medium"
 
 output_channels:
   - type: telegram

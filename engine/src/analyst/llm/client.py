@@ -1,11 +1,11 @@
-"""OpenAI GPT API client wrapper with structured output via function calling."""
+"""OpenAI GPT API client wrapper using the Responses API."""
 
 from __future__ import annotations
 
 import asyncio
 import json
 import logging
-from typing import Any, TypeVar
+from typing import Any, Literal, TypeVar
 
 from openai import OpenAI, APIError as OpenAIAPIError
 from pydantic import BaseModel
@@ -17,11 +17,13 @@ logger = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=BaseModel)
 
+ReasoningEffort = Literal["none", "low", "medium", "high", "xhigh"]
+
 
 class LLMClient:
-    """Wrapper around the OpenAI SDK for GPT API calls."""
+    """Wrapper around the OpenAI SDK using the Responses API (GPT-5+)."""
 
-    def __init__(self, model: str = "gpt-4.1", max_retries: int = 3):
+    def __init__(self, model: str = "gpt-5.5", max_retries: int = 3):
         api_key = get_env("OPENAI_API_KEY")
         self.client = OpenAI(api_key=api_key, max_retries=max_retries)
         self.model = model
@@ -32,8 +34,8 @@ class LLMClient:
         self,
         system_prompt: str,
         user_prompt: str,
-        max_tokens: int = 4096,
-        temperature: float = 0.3,
+        max_output_tokens: int = 4096,
+        reasoning_effort: ReasoningEffort = "medium",
     ) -> dict[str, Any]:
         """Send a prompt to GPT and return the text response with metadata.
 
@@ -42,19 +44,17 @@ class LLMClient:
         """
         try:
             response = await asyncio.to_thread(
-                self.client.chat.completions.create,
+                self.client.responses.create,
                 model=self.model,
-                max_tokens=max_tokens,
-                temperature=temperature,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt},
-                ],
+                instructions=system_prompt,
+                input=user_prompt,
+                max_output_tokens=max_output_tokens,
+                reasoning={"effort": reasoning_effort},
             )
 
-            text = response.choices[0].message.content or ""
-            input_tokens = response.usage.prompt_tokens if response.usage else 0
-            output_tokens = response.usage.completion_tokens if response.usage else 0
+            text = response.output_text or ""
+            input_tokens = response.usage.input_tokens if response.usage else 0
+            output_tokens = response.usage.output_tokens if response.usage else 0
 
             self._total_input_tokens += input_tokens
             self._total_output_tokens += output_tokens
@@ -80,56 +80,33 @@ class LLMClient:
         system_prompt: str,
         user_prompt: str,
         response_model: type[T],
-        max_tokens: int = 4096,
-        temperature: float = 0.3,
+        max_output_tokens: int = 4096,
+        reasoning_effort: ReasoningEffort = "medium",
     ) -> tuple[T, dict[str, Any]]:
         """Send a prompt to GPT and parse the response into a Pydantic model.
 
-        Uses function calling to get structured JSON output.
+        Uses the Responses API native structured-output parser.
 
         Returns:
             Tuple of (parsed model instance, metadata dict)
         """
-        schema = response_model.model_json_schema()
-        tool_name = response_model.__name__
-
-        # Resolve $defs references inline for OpenAI compatibility
-        schema = self._resolve_schema_refs(schema)
-
         try:
             response = await asyncio.to_thread(
-                self.client.chat.completions.create,
+                self.client.responses.parse,
                 model=self.model,
-                max_tokens=max_tokens,
-                temperature=temperature,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt},
-                ],
-                tools=[
-                    {
-                        "type": "function",
-                        "function": {
-                            "name": tool_name,
-                            "description": f"Return the analysis result as structured {tool_name}",
-                            "parameters": schema,
-                        },
-                    }
-                ],
-                tool_choice={"type": "function", "function": {"name": tool_name}},
+                instructions=system_prompt,
+                input=user_prompt,
+                text_format=response_model,
+                max_output_tokens=max_output_tokens,
+                reasoning={"effort": reasoning_effort},
             )
 
-            # Extract function call arguments
-            message = response.choices[0].message
-            if not message.tool_calls or len(message.tool_calls) == 0:
-                raise LLMError("GPT did not return a function call")
+            parsed = response.output_parsed
+            if parsed is None:
+                raise LLMError("GPT did not return a parsed structured response")
 
-            arguments_json = message.tool_calls[0].function.arguments
-            tool_input = json.loads(arguments_json)
-            parsed = response_model.model_validate(tool_input)
-
-            input_tokens = response.usage.prompt_tokens if response.usage else 0
-            output_tokens = response.usage.completion_tokens if response.usage else 0
+            input_tokens = response.usage.input_tokens if response.usage else 0
+            output_tokens = response.usage.output_tokens if response.usage else 0
             self._total_input_tokens += input_tokens
             self._total_output_tokens += output_tokens
 
@@ -140,7 +117,7 @@ class LLMClient:
             }
 
             logger.info(
-                f"GPT structured call ({tool_name}): "
+                f"GPT structured call ({response_model.__name__}): "
                 f"{input_tokens} in / {output_tokens} out tokens"
             )
 
@@ -155,84 +132,73 @@ class LLMClient:
             logger.error(f"Error parsing GPT response: {e}")
             raise LLMError(f"Error parsing structured response: {e}") from e
 
-    def _resolve_schema_refs(self, schema: dict[str, Any]) -> dict[str, Any]:
-        """Resolve $defs/$ref references inline for OpenAI compatibility.
-
-        Pydantic v2 generates schemas with $defs for nested models and enums.
-        OpenAI function calling works better with inline definitions.
-        """
-        defs = schema.pop("$defs", None) or schema.pop("definitions", None)
-        if not defs:
-            return schema
-
-        def _resolve(obj: Any) -> Any:
-            if isinstance(obj, dict):
-                if "$ref" in obj:
-                    ref_path = obj["$ref"]  # e.g., "#/$defs/Outlook"
-                    ref_name = ref_path.split("/")[-1]
-                    if ref_name in defs:
-                        return _resolve(defs[ref_name])
-                    return obj
-                return {k: _resolve(v) for k, v in obj.items()}
-            elif isinstance(obj, list):
-                return [_resolve(item) for item in obj]
-            return obj
-
-        return _resolve(schema)
-
     async def chat_with_tools(
         self,
         messages: list[dict[str, Any]],
         tools: list[dict[str, Any]] | None = None,
-        max_tokens: int = 4096,
-        temperature: float = 0.4,
+        max_output_tokens: int = 4096,
+        reasoning_effort: ReasoningEffort = "medium",
     ) -> dict[str, Any]:
-        """Multi-turn chat with optional tool use.
+        """Multi-turn chat with optional tool use, on the Responses API.
 
-        Unlike analyze() which takes a single system+user pair, this method
-        accepts a full OpenAI message history and lets the LLM choose
-        whether and which tools to call.
+        Accepts a Chat-Completions-style message history (with 'role' and either
+        'content', 'tool_calls', or 'tool_call_id' fields) and converts it to
+        the Responses API input-item format internally.
 
         Args:
-            messages: Full OpenAI message history (system, user, assistant, tool).
-            tools: OpenAI tool definitions (function calling format).
-            max_tokens: Max response tokens.
-            temperature: Response temperature.
+            messages: Message history in Chat Completions format (system, user,
+                assistant, tool roles).
+            tools: Tool definitions in Responses API format (type=function,
+                name/description/parameters at top level).
+            max_output_tokens: Max response tokens.
+            reasoning_effort: Reasoning effort for the model.
 
         Returns:
             dict with keys: content, tool_calls, input_tokens, output_tokens, model
         """
+        instructions, input_items = _convert_messages_to_responses_input(messages)
+
         kwargs: dict[str, Any] = {
             "model": self.model,
-            "max_tokens": max_tokens,
-            "temperature": temperature,
-            "messages": messages,
+            "input": input_items,
+            "max_output_tokens": max_output_tokens,
+            "reasoning": {"effort": reasoning_effort},
         }
+        if instructions is not None:
+            kwargs["instructions"] = instructions
         if tools:
             kwargs["tools"] = tools
 
         try:
             response = await asyncio.to_thread(
-                self.client.chat.completions.create, **kwargs
+                self.client.responses.create, **kwargs
             )
 
-            message = response.choices[0].message
-            input_tokens = response.usage.prompt_tokens if response.usage else 0
-            output_tokens = response.usage.completion_tokens if response.usage else 0
+            input_tokens = response.usage.input_tokens if response.usage else 0
+            output_tokens = response.usage.output_tokens if response.usage else 0
 
             self._total_input_tokens += input_tokens
             self._total_output_tokens += output_tokens
 
-            tool_calls = None
-            if message.tool_calls:
-                tool_calls = [
-                    {
-                        "id": tc.id,
-                        "function_name": tc.function.name,
-                        "arguments": json.loads(tc.function.arguments),
-                    }
-                    for tc in message.tool_calls
-                ]
+            tool_calls: list[dict[str, Any]] | None = None
+            collected_calls: list[dict[str, Any]] = []
+            for item in response.output or []:
+                item_type = getattr(item, "type", None)
+                if item_type == "function_call":
+                    arguments_raw = getattr(item, "arguments", "") or "{}"
+                    try:
+                        arguments = json.loads(arguments_raw)
+                    except json.JSONDecodeError:
+                        arguments = {}
+                    collected_calls.append({
+                        "id": getattr(item, "call_id", None) or getattr(item, "id", ""),
+                        "function_name": getattr(item, "name", ""),
+                        "arguments": arguments,
+                    })
+            if collected_calls:
+                tool_calls = collected_calls
+
+            content = response.output_text or None
 
             logger.info(
                 f"GPT chat call: {input_tokens} in / {output_tokens} out tokens "
@@ -240,7 +206,7 @@ class LLMClient:
             )
 
             return {
-                "content": message.content,
+                "content": content,
                 "tool_calls": tool_calls,
                 "input_tokens": input_tokens,
                 "output_tokens": output_tokens,
@@ -259,3 +225,52 @@ class LLMClient:
             "output": self._total_output_tokens,
             "total": self._total_input_tokens + self._total_output_tokens,
         }
+
+
+def _convert_messages_to_responses_input(
+    messages: list[dict[str, Any]],
+) -> tuple[str | None, list[dict[str, Any]]]:
+    """Translate Chat-Completions-style messages to Responses API input items.
+
+    - The leading system message (if any) is returned as `instructions`.
+    - User/assistant text messages become `{"role": ..., "content": ...}` items.
+    - Assistant messages with `tool_calls` are expanded into
+      `{"type": "function_call", "call_id": ..., "name": ..., "arguments": ...}` items.
+    - Tool result messages (`role: "tool"`) become
+      `{"type": "function_call_output", "call_id": ..., "output": ...}` items.
+    """
+    instructions: str | None = None
+    items: list[dict[str, Any]] = []
+
+    for idx, msg in enumerate(messages):
+        role = msg.get("role")
+        if role == "system" and idx == 0 and instructions is None:
+            instructions = msg.get("content") or ""
+            continue
+
+        if role == "tool":
+            items.append({
+                "type": "function_call_output",
+                "call_id": msg.get("tool_call_id", ""),
+                "output": msg.get("content", ""),
+            })
+            continue
+
+        if role == "assistant" and msg.get("tool_calls"):
+            text = msg.get("content") or ""
+            if text:
+                items.append({"role": "assistant", "content": text})
+            for tc in msg["tool_calls"]:
+                fn = tc.get("function", {})
+                items.append({
+                    "type": "function_call",
+                    "call_id": tc.get("id", ""),
+                    "name": fn.get("name", ""),
+                    "arguments": fn.get("arguments", "{}"),
+                })
+            continue
+
+        if role in ("user", "assistant", "system"):
+            items.append({"role": role, "content": msg.get("content") or ""})
+
+    return instructions, items

@@ -1,4 +1,4 @@
-"""OpenAI function-calling tool definitions and executor for the research agent."""
+"""OpenAI Responses API tool definitions and executor for the research agent."""
 
 from __future__ import annotations
 
@@ -11,181 +11,167 @@ from analyst.data.aggregator import DataAggregator
 logger = logging.getLogger(__name__)
 
 
-# --- OpenAI tool definitions ---
+# --- OpenAI Responses API tool definitions ---
 
 TOOL_DEFINITIONS: list[dict[str, Any]] = [
     {
         "type": "function",
-        "function": {
-            "name": "get_stock_quote",
-            "description": (
-                "Aktuelle Kursdaten fuer eine Aktie abrufen: Kurs, Veraenderung, "
-                "Marktkapitalisierung, KGV, 52-Wochen-Hoch/Tief, Volumen."
-            ),
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "ticker": {
-                        "type": "string",
-                        "description": "Aktien-Ticker (z.B. 'AAPL', 'NVDA', 'MSFT')",
-                    },
+        "name": "get_stock_quote",
+        "description": (
+            "Aktuelle Kursdaten fuer eine Aktie abrufen: Kurs, Veraenderung, "
+            "Marktkapitalisierung, KGV, 52-Wochen-Hoch/Tief, Volumen."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "ticker": {
+                    "type": "string",
+                    "description": "Aktien-Ticker (z.B. 'AAPL', 'NVDA', 'MSFT')",
                 },
-                "required": ["ticker"],
             },
+            "required": ["ticker"],
         },
     },
     {
         "type": "function",
-        "function": {
-            "name": "get_company_financials",
-            "description": (
-                "Fundamentaldaten eines Unternehmens abrufen: Umsatz, Wachstum, Margen, "
-                "EPS, Free Cash Flow, Verschuldung, Bewertungskennzahlen (KGV, EV/EBITDA, P/B)."
-            ),
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "ticker": {
-                        "type": "string",
-                        "description": "Aktien-Ticker (z.B. 'AAPL')",
-                    },
+        "name": "get_company_financials",
+        "description": (
+            "Fundamentaldaten eines Unternehmens abrufen: Umsatz, Wachstum, Margen, "
+            "EPS, Free Cash Flow, Verschuldung, Bewertungskennzahlen (KGV, EV/EBITDA, P/B)."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "ticker": {
+                    "type": "string",
+                    "description": "Aktien-Ticker (z.B. 'AAPL')",
                 },
-                "required": ["ticker"],
             },
+            "required": ["ticker"],
         },
     },
     {
         "type": "function",
-        "function": {
-            "name": "get_multiple_stocks",
-            "description": (
-                "Kursdaten fuer mehrere Aktien gleichzeitig abrufen. "
-                "Nuetzlich fuer Branchenvergleiche oder Peer-Analysen."
-            ),
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "tickers": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "description": "Liste von Ticker-Symbolen (z.B. ['AAPL', 'MSFT', 'GOOGL'])",
-                    },
+        "name": "get_multiple_stocks",
+        "description": (
+            "Kursdaten fuer mehrere Aktien gleichzeitig abrufen. "
+            "Nuetzlich fuer Branchenvergleiche oder Peer-Analysen."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "tickers": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Liste von Ticker-Symbolen (z.B. ['AAPL', 'MSFT', 'GOOGL'])",
                 },
-                "required": ["tickers"],
             },
+            "required": ["tickers"],
         },
     },
     {
         "type": "function",
-        "function": {
-            "name": "get_sector_performance",
-            "description": (
-                "Performance aller Marktsektoren abrufen (Technology, Healthcare, etc.). "
-                "Zeigt welche Sektoren aktuell stark oder schwach performen."
-            ),
-            "parameters": {
-                "type": "object",
-                "properties": {},
-            },
+        "name": "get_sector_performance",
+        "description": (
+            "Performance aller Marktsektoren abrufen (Technology, Healthcare, etc.). "
+            "Zeigt welche Sektoren aktuell stark oder schwach performen."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {},
         },
     },
     {
         "type": "function",
-        "function": {
-            "name": "get_macro_indicators",
-            "description": (
-                "Makrooekonomische Indikatoren abrufen: VIX (Volatilitaet), "
-                "Treasury Yields, Dollar-Index etc."
-            ),
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "indicators": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "description": (
-                            "Liste von Indikator-IDs. Verfuegbar: "
-                            "'^VIX' (Volatility Index), "
-                            "'^TNX' (10Y Treasury Yield), "
-                            "'^TYX' (30Y Treasury Yield), "
-                            "'DX-Y.NYB' (US Dollar Index)"
-                        ),
-                    },
+        "name": "get_macro_indicators",
+        "description": (
+            "Makrooekonomische Indikatoren abrufen: VIX (Volatilitaet), "
+            "Treasury Yields, Dollar-Index etc."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "indicators": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": (
+                        "Liste von Indikator-IDs. Verfuegbar: "
+                        "'^VIX' (Volatility Index), "
+                        "'^TNX' (10Y Treasury Yield), "
+                        "'^TYX' (30Y Treasury Yield), "
+                        "'DX-Y.NYB' (US Dollar Index)"
+                    ),
                 },
-                "required": ["indicators"],
             },
+            "required": ["indicators"],
         },
     },
     {
         "type": "function",
-        "function": {
-            "name": "search_news",
-            "description": (
-                "Aktuelle Finanznachrichten aus RSS-Feeds durchsuchen "
-                "(Google Finance, Yahoo Finance, MarketWatch, CNBC)."
-            ),
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "max_items": {
-                        "type": "integer",
-                        "description": "Maximale Anzahl Nachrichten (Standard: 15)",
-                        "default": 15,
-                    },
-                    "max_age_hours": {
-                        "type": "integer",
-                        "description": "Maximales Alter in Stunden (Standard: 48)",
-                        "default": 48,
-                    },
+        "name": "search_news",
+        "description": (
+            "Aktuelle Finanznachrichten aus RSS-Feeds durchsuchen "
+            "(Google Finance, Yahoo Finance, MarketWatch, CNBC)."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "max_items": {
+                    "type": "integer",
+                    "description": "Maximale Anzahl Nachrichten (Standard: 15)",
+                    "default": 15,
+                },
+                "max_age_hours": {
+                    "type": "integer",
+                    "description": "Maximales Alter in Stunden (Standard: 48)",
+                    "default": 48,
                 },
             },
         },
     },
     {
         "type": "function",
-        "function": {
-            "name": "propose_position",
-            "description": (
-                "Eine neue Investment-Position vorschlagen, wenn du zu einer Investment-"
-                "Ueberzeugung gekommen bist. Der Nutzer muss den Vorschlag bestaetigen, "
-                "bevor die Position erstellt wird. Nutze dies nur nach gruendlicher Analyse."
-            ),
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "ticker": {
-                        "type": "string",
-                        "description": "Aktien-Ticker (z.B. 'NVDA')",
-                    },
-                    "name": {
-                        "type": "string",
-                        "description": "Vollstaendiger Unternehmensname (z.B. 'NVIDIA Corporation')",
-                    },
-                    "thesis": {
-                        "type": "string",
-                        "description": (
-                            "Investment-These: Warum ist dieses Investment attraktiv? "
-                            "Beschreibe die Kernueberzeugung, Wettbewerbsvorteile und Wachstumstreiber."
-                        ),
-                    },
-                    "bear_triggers": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "description": (
-                            "Bear-Case Trigger: 3-5 konkrete Ereignisse oder Entwicklungen, "
-                            "die die These gefaehrden wuerden und zum Verkauf fuehren sollten."
-                        ),
-                    },
-                    "reasoning": {
-                        "type": "string",
-                        "description": (
-                            "Ausfuehrliche Begruendung: Zusammenfassung der Recherche, "
-                            "Datenlage und warum jetzt der richtige Zeitpunkt ist."
-                        ),
-                    },
+        "name": "propose_position",
+        "description": (
+            "Eine neue Investment-Position vorschlagen, wenn du zu einer Investment-"
+            "Ueberzeugung gekommen bist. Der Nutzer muss den Vorschlag bestaetigen, "
+            "bevor die Position erstellt wird. Nutze dies nur nach gruendlicher Analyse."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "ticker": {
+                    "type": "string",
+                    "description": "Aktien-Ticker (z.B. 'NVDA')",
                 },
-                "required": ["ticker", "name", "thesis", "bear_triggers", "reasoning"],
+                "name": {
+                    "type": "string",
+                    "description": "Vollstaendiger Unternehmensname (z.B. 'NVIDIA Corporation')",
+                },
+                "thesis": {
+                    "type": "string",
+                    "description": (
+                        "Investment-These: Warum ist dieses Investment attraktiv? "
+                        "Beschreibe die Kernueberzeugung, Wettbewerbsvorteile und Wachstumstreiber."
+                    ),
+                },
+                "bear_triggers": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": (
+                        "Bear-Case Trigger: 3-5 konkrete Ereignisse oder Entwicklungen, "
+                        "die die These gefaehrden wuerden und zum Verkauf fuehren sollten."
+                    ),
+                },
+                "reasoning": {
+                    "type": "string",
+                    "description": (
+                        "Ausfuehrliche Begruendung: Zusammenfassung der Recherche, "
+                        "Datenlage und warum jetzt der richtige Zeitpunkt ist."
+                    ),
+                },
             },
+            "required": ["ticker", "name", "thesis", "bear_triggers", "reasoning"],
         },
     },
 ]
