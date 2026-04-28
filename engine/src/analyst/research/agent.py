@@ -111,8 +111,8 @@ class ResearchAgent:
             response = await self.llm.chat_with_tools(
                 messages=messages,
                 tools=TOOL_DEFINITIONS,
-                max_tokens=4096,
-                temperature=0.4,
+                max_output_tokens=4096,
+                reasoning_effort="medium",
             )
 
             total_input += response["input_tokens"]
@@ -193,8 +193,8 @@ class ResearchAgent:
         response = await self.llm.chat_with_tools(
             messages=messages,
             tools=None,  # No tools for final summary
-            max_tokens=4096,
-            temperature=0.4,
+            max_output_tokens=4096,
+            reasoning_effort="medium",
         )
         total_input += response["input_tokens"]
         total_output += response["output_tokens"]

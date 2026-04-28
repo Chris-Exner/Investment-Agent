@@ -116,8 +116,8 @@ class ThesisCheckAnalyzer(BaseAnalyzer):
             system_prompt=SYSTEM_PROMPT,
             user_prompt=user_prompt,
             response_model=ThesisCheckResult,
-            max_tokens=config.llm.max_tokens,
-            temperature=config.llm.temperature,
+            max_output_tokens=config.llm.max_output_tokens,
+            reasoning_effort=config.llm.reasoning_effort,
         )
 
         # 6. Build narrative

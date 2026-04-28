@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -117,11 +117,11 @@ class ScheduleConfig(BaseModel):
 
 
 class LLMConfig(BaseModel):
-    model: str = "gpt-4.1"
+    model: str = "gpt-5.5"
     prompt_version: str = "v2"
     prompt_template: str = "market_overview"
-    max_tokens: int = 8192
-    temperature: float = 0.3
+    max_output_tokens: int = 8192
+    reasoning_effort: Literal["none", "low", "medium", "high", "xhigh"] = "medium"
 
 
 class OutputChannelConfig(BaseModel):

@@ -44,11 +44,11 @@ parameters:
     max_age_hours: 18
 
 llm:
-  model: "gpt-4.1"
+  model: "gpt-5.5"
   prompt_version: "v2"
   prompt_template: "market_overview"
-  max_tokens: 8192
-  temperature: 0.3
+  max_output_tokens: 8192
+  reasoning_effort: "medium"
 
 output_channels:
   - type: telegram

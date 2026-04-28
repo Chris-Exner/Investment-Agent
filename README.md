@@ -42,7 +42,7 @@ In parallel, the market overview task delivers a daily briefing on the overall m
 | Area | Technologies |
 |------|-------------|
 | Backend | Python 3.11+, FastAPI, APScheduler, Pydantic |
-| AI | OpenAI GPT-4.1 (Structured Output) |
+| AI | OpenAI GPT-5.5 via Responses API (native Structured Output) |
 | Data Sources | yfinance (quotes, fundamentals, macro), RSS/News Scraping, FRED API (macro indicators) |
 | Frontend | React 19, TypeScript, Vite |
 | Storage | SQLite (runs & cache), YAML (task configuration & positions) |
@@ -155,8 +155,9 @@ parameters:
         - "Export restrictions"
 
 llm:
-  model: "gpt-4.1"
+  model: "gpt-5.5"
   prompt_template: "thesis_check"
+  reasoning_effort: "medium"
 
 output_channels:
   - type: telegram
